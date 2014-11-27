@@ -31,10 +31,10 @@ module LogAnalysis where
   insert :: LogMessage -> MessageTree -> MessageTree
   insert (Unknown _) t = t
   insert lm Leaf = Node Leaf lm Leaf
-  insert lm1@(LogMessage _ t _)  tree@(Node n1 lm2@(LogMessage _ t2 _) n2)
+  insert lm1@(LogMessage _ t _) tree@(Node n1 lm2@(LogMessage _ t2 _) n2)
     | t > t2 = case n1 of  
-                                                           Leaf -> Node Leaf lm1 n2 
-                                                           _    -> insert lm1 tree
+       Leaf -> Node Leaf lm1 tree 
+       _    -> Node (insert lm1 n1) lm2 n2
     | t < t2 = Node n1 lm2 (insert lm1 n2) 
 
   build :: [LogMessage] -> MessageTree
@@ -48,21 +48,16 @@ module LogAnalysis where
   whatWentWrong :: [LogMessage] -> [String]
   whatWentWrong ms = map extractMessage $ filter isSevere $ orderedLogMessages ms
     where
-  orderedLogMessages :: [LogMessage] -> [LogMessage]
-  orderedLogMessages lm = inOrder $ build lm 
+      orderedLogMessages :: [LogMessage] -> [LogMessage]
+      orderedLogMessages lm = inOrder $ build lm 
 
-  extractMessage :: LogMessage -> String
-  extractMessage (LogMessage _ _ s) = s
-  extractMessage (Unknown _) = "" 
+      extractMessage :: LogMessage -> String
+      extractMessage (LogMessage _ _ s) = s
+      extractMessage (Unknown _) = "" 
 
       
-  isSevere :: LogMessage -> Bool
-  isSevere (LogMessage (Error s) _ _)
-    | s >= 50 = True
-    | otherwise = False
-  isSevere _ = False 
-
-    {- 15 -}
-    {- / \ -}
-  {- 20  12 -}
-  
+      isSevere :: LogMessage -> Bool
+      isSevere (LogMessage (Error s) _ _)
+        | s >= 50 = True
+        | otherwise = False
+      isSevere _ = False 

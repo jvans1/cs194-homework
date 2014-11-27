@@ -10,24 +10,59 @@ module LogAnalysis where
     | otherwise = Unknown l
     where 
       errorCode :: String -> Int
-      errorCode l = extractInt l 1
+      errorCode el = extractInt el 1
 
       errorTimeStamp :: String -> Int
-      errorTimeStamp l = extractInt l 2 
+      errorTimeStamp el = extractInt el 2 
 
       extractInt :: String -> Int -> Int
-      extractInt l i = read $ (words l)!!i
+      extractInt el i = read $ (words el)!!i
 
       errorMessage :: String -> String
-      errorMessage l = unwords $ tail $ tail $ tail $ words l
+      errorMessage el = unwords $ tail $ tail $ tail $ words el
 
       message :: String -> String
-      message l = unwords $ tail $ tail $ words l
+      message el = unwords $ tail $ tail $ words el
 
       timestamp :: String -> Int
-      timestamp l = read $ head $ tail $ words l
+      timestamp el = read $ head $ tail $ words el
 
 
   insert :: LogMessage -> MessageTree -> MessageTree
-  insert m Leaf = Node Leaf m Leaf
-  insert m MessageTree = Node Leaf m Leaf
+  insert (Unknown _) t = t
+  insert lm Leaf = Node Leaf lm Leaf
+  insert lm1@(LogMessage _ t _)  tree@(Node n1 lm2@(LogMessage _ t2 _) n2)
+    | t > t2 = case n1 of  
+                                                           Leaf -> Node Leaf lm1 n2 
+                                                           _    -> insert lm1 tree
+    | t < t2 = Node n1 lm2 (insert lm1 n2) 
+
+  build :: [LogMessage] -> MessageTree
+  build ms = foldr (insert) (Node Leaf (head ms) Leaf) (tail ms)
+
+  inOrder :: MessageTree -> [LogMessage]
+  inOrder Leaf = []
+  inOrder (Node n1 lm1 n2) = (inOrder n1) ++ [lm1] ++ (inOrder n2)
+
+
+  whatWentWrong :: [LogMessage] -> [String]
+  whatWentWrong ms = map extractMessage $ filter isSevere $ orderedLogMessages ms
+    where
+  orderedLogMessages :: [LogMessage] -> [LogMessage]
+  orderedLogMessages lm = inOrder $ build lm 
+
+  extractMessage :: LogMessage -> String
+  extractMessage (LogMessage _ _ s) = s
+  extractMessage (Unknown _) = "" 
+
+      
+  isSevere :: LogMessage -> Bool
+  isSevere (LogMessage (Error s) _ _)
+    | s >= 50 = True
+    | otherwise = False
+  isSevere _ = False 
+
+    {- 15 -}
+    {- / \ -}
+  {- 20  12 -}
+  

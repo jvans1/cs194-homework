@@ -1,3 +1,5 @@
+module JoinList where
+import Scrabble
 import Data.Monoid
 import Sized
 data JoinList m a = Empty
@@ -19,7 +21,11 @@ tag (Append m _ _) = m
 
 
 sizedIndex :: (Sized a, Monoid a) => JoinList a b -> Int
-sizedIndex s = (getSize $ size $ tag s) - 1 
+sizedIndex s = ( indexValue $ tag s) 
+
+
+indexValue :: (Sized a, Monoid a) => a -> Int
+indexValue = getSize . size 
 
 indexJ :: (Sized b, Monoid b) => Int -> JoinList b a -> Maybe a
 indexJ i _     | i < 0              = Nothing
@@ -31,11 +37,23 @@ indexJ i (Append m j1 j2)
   | otherwise                       = indexJ i j2
 
 dropJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a  
-dropJ i j 
-  | (sizedIndex j) >= i    = Empty
-  | i == 0                 = j 
+dropJ 0 j                 =  j
+dropJ _ Empty             = Empty
+dropJ _ (Single _ _)      = Empty
+dropJ i (Append m j1 j2)  
+  | i < (sizedIndex j1)   = (+++) j1 (dropJ i j2)
+  | otherwise             = dropJ (i - (sizedIndex j1)) j2
 
-{- dropJ i,/ -}
 
+takeJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a
+takeJ 0 _ = Empty
+takeJ _ Empty = Empty
+takeJ _ j@(Single _ _) = j
+takeJ i (Append m j1 j2)  
+  | leftSize <= i = (+++) j1 $ takeJ (i - leftSize) j2
+  | otherwise   = takeJ i j1
+    where 
+      leftSize = sizedIndex j1
 
-
+scoreLine :: String -> JoinList Score String
+scoreLine s = Single (scoreString s) s

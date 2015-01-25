@@ -7,23 +7,36 @@ import Sized
 import Buffer
 import JoinList
 
+toList :: JoinList a b -> [b]
+toList Empty             = []
+toList (Single a s)      = [s]
+toList (Append _ j1 j2)  =  (toList j1) ++ (toList j2)
+
+type Annotation = (Score, Size)
+type EditorJoinList = JoinList (Score, Size) String
+
+makeAnnotation :: String -> Annotation
+makeAnnotation s = (scoreString s, Size 1)
+
+push :: Monoid b => (a -> JoinList b a) -> JoinList b a -> a -> JoinList b a
+push makeSingle list a = list +++ makeSingle a
+
+makeSingle :: String -> EditorJoinList
+makeSingle s = Single (makeAnnotation s) s
+
 instance Buffer (JoinList (Score, Size) String) where
-  toString Empty             = ""
-  toString (Single a s)      = s
-  toString (Append _ j1 j2)  =  (toString j1) ++ (toString j2)
+  toString = unlines . toList
 
-  fromString  "" = Empty
-  fromString  s = Single (score, 0) s
-    where 
-      score = scoreString s
+  fromString = (foldl (push makeSingle) Empty) . lines
 
-  line a = indexJ a
+  line = indexJ
 
-  replaceLine i _ _ | i < 0 = Empty
-  replaceLine _ _ Empty = Empty
-  replaceLine i _ b1 | i > (numLines b1) = b1
-  replaceLine i s (Single _ v)      = Single ((scoreString s), 0) s
-  replaceLine i s (Append _ j1 j2)  = newLeft +++ (Single ((scoreString s), Size 0) s) +++ newRight
+  replaceLine i _ j | outOfBounds                 = j
+    where
+      outOfBounds = i < 0 || i > (numLines j)
+  replaceLine _ _ Empty                           = Empty
+  replaceLine i s (Single _ _)                    = Single ((scoreString s), (Size 0)) s
+  replaceLine i s (Append _ j1 j2)                = newLeft +++ (Single ((scoreString s), (Size 0)) s) +++ newRight
     where 
       newLeft = takeJ (i - 1) j1
       newRight = dropJ (i + 1) j2

@@ -28,13 +28,11 @@ indexValue :: (Sized a, Monoid a) => a -> Int
 indexValue = getSize . size 
 
 indexJ :: (Sized b, Monoid b) => Int -> JoinList b a -> Maybe a
-indexJ i _     | i < 0              = Nothing
 indexJ _ Empty                      = Nothing
-indexJ i j     | (sizedIndex j) < i = Nothing
 indexJ i (Single m a)               = Just a
 indexJ i (Append m j1 j2) 
   | (sizedIndex j1) > i             = indexJ i j1
-  | otherwise                       = indexJ i j2
+  | otherwise                       = indexJ (i - (sizedIndex j1) ) j2
 
 dropJ :: (Sized b, Monoid b) => Int -> JoinList b a -> JoinList b a  
 dropJ 0 j                 =  j

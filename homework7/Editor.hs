@@ -1,4 +1,6 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving , ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving
+           , ScopedTypeVariables
+   #-}
 module Editor where
 
 import System.IO
@@ -6,7 +8,7 @@ import System.IO
 import Buffer
 
 import Control.Exception
-import Control.Monad.ST
+import Control.Monad.State
 
 import Control.Applicative
 import Control.Arrow       (first, second)

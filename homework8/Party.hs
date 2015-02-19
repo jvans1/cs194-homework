@@ -24,54 +24,26 @@ moreFun g1@(GL _ f1) g2@(GL _ f2)
   | otherwise = g2
 
 
-treeFold f b (Node{ subForest = [], rootLabel = a }) = f a b
-treeFold f b (Node{ subForest = xs, rootLabel = a } ) = f a $ foldl' (treeFold f) b xs
+treeFold :: (a -> [b] -> b) -> Tree a -> b
+treeFold f (Node a ls) = f a $ map (treeFold f) ls
 
 nextLevel :: Employee -> [(GuestList, GuestList)] -> (GuestList, GuestList)
-nextLevel b []  = (soloList, soloList) 
-  where
-    soloList :: GuestList
-    soloList = glCons b $ GL [] 0 
-nextLevel b ggs = (bestListwithEmp, bestListWithoutEmp) 
-  where
-    mostFunList :: [GuestList] -> GuestList
-    mostFunList = maximumBy compare
-
-    bestListwithEmp :: GuestList
-    bestListwithEmp  = mostFunList $ adjustedFun firstList
-      where 
-        firstList :: [GuestList]
-        firstList  = map fst ggs
-
-        adjustedFun :: [GuestList] -> [GuestList]
-        adjustedFun = map adjustFun
-          where 
-            adjustFun :: GuestList -> GuestList
-            adjustFun  (GL (x:xs) f) = GL (x:xs) $ f - (empFun x)
-
-    bestListWithoutEmp :: GuestList
-    bestListWithoutEmp = mostFunList $ map (glCons b) secondList
-      where
-        secondList :: [GuestList]
-        secondList = map snd ggs
-
+nextLevel e ggs = (guestListWithBoss, guestListWithoutBoss)
+  where 
+    guestListWithBoss :: GuestList
+    guestListWithBoss = glCons e $ mconcat $ map snd ggs
+    guestListWithoutBoss :: GuestList
+    guestListWithoutBoss = glCons e $ mconcat $ (map (uncurry moreFun) ggs)
 
 
 maxFun :: Tree Employee -> GuestList
-maxFun = bestList . topLists
-  where 
-    bestList :: (GuestList, GuestList) -> GuestList
-    bestList (a, b) = moreFun a b
-    topLists :: Tree Employee -> (GuestList, GuestList)
-    topLists Node{ subForest = ss, rootLabel = e } = nextLevel e $ map topLists ss
-
+maxFun empTree = uncurry moreFun $ treeFold nextLevel empTree
 
 main :: IO ()
-main = do 
-  empTree <- readFile "company.txt"
-  putStrLn $ "Total fun score: " ++ (show $ funScore $ maxFun $ readTree empTree)
-  putStrLn $ foldr (++) "" $ map nameConvert $ map (\x -> empName x ) $ guests $ maxFun $ readTree empTree
-  {- putStrLn "Done" -}
+main = do
+  readFile "company.txt" >>= putStrLn . (show . funScore . maxFun . readTree)
+  {- putStrLn $ foldr (++) "" $ map nameConvert $ map (\x -> empName x ) $ guests $ maxFun $ readTree empTree -}
+  putStrLn "Done"
 readTree :: String -> Tree Employee
 readTree = read
 nameConvert :: Name -> String

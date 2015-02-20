@@ -86,6 +86,4 @@ abParser_ = (\a b -> ()) <$> char 'a' <*> char 'b'
 
 
 intPair :: Parser [Integer]
-intPair = (\x _ z -> (x:z:[])) <$> posInt <*> pure strip <*>  posInt
-
-
+intPair = (\x _ z -> x:z:[]) <$> posInt <*> char ' ' <*>  posInt

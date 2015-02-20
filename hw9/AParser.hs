@@ -66,6 +66,7 @@ instance Functor Parser where
   fmap f p = Parser (\s -> fmap (first f) (runParser p s ))
 
 
+
 -- (String -> Maybe ((a -> b), String)) -> (String -> Maybe (a, String) ) -> (String -> Maybe (b, String))
 instance Applicative Parser where
   pure x = Parser (\s -> Just(x, s))
@@ -75,22 +76,16 @@ instance Applicative Parser where
                   Nothing -> Nothing
                   Just (f, s') -> fmap (\(x, y) -> (f x, y))  $ runParser p s'
 
-findAb :: Parser String
-findAb = Parser f
-  where
-    f a | length a < 2        = Nothing
-    f (x:y:z) 
-      | x == 'a' && y == 'b'  = Just((x:y:[]), z)
-      | otherwise             = Nothing
 
-
-findA :: String -> (Char, Char)
-findA (x:y:[]) | x == 'a'  = (x, y)
+{- (String -> String -> (Char, Char)) Parser String Parser String -}
 
 abParser :: Parser (Char, Char)
-abParser = findA <$> findAb
-
-
+abParser = (\a b -> (a,b)) <$> char 'a' <*> char 'b'
 
 abParser_ :: Parser ()
+abParser_ = (\a b -> ()) <$> char 'a' <*> char 'b'
 
+
+intPair :: Parser [Integer]
+intPair = (\x y -> (x:y:[])) <$> posInt <*> posInt
+  

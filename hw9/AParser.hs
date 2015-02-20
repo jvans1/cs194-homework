@@ -1,10 +1,9 @@
-{- CIS 194 HW 10
-   due Monday, 1 April
--}
+{-# XOverloadedStrings #-}
 
 module AParser where
 
 import           Control.Applicative
+import           Data.Text(strip)
 
 import           Data.Char
 
@@ -87,5 +86,6 @@ abParser_ = (\a b -> ()) <$> char 'a' <*> char 'b'
 
 
 intPair :: Parser [Integer]
-intPair = (\x y -> (x:y:[])) <$> posInt <*> posInt
-  
+intPair = (\x _ z -> (x:z:[])) <$> posInt <*> pure strip <*>  posInt
+
+

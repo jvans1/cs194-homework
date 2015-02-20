@@ -1,4 +1,4 @@
-{-# XOverloadedStrings #-}
+{- XOverloadedStrings -}
 
 module AParser where
 
@@ -87,3 +87,13 @@ abParser_ = (\a b -> ()) <$> char 'a' <*> char 'b'
 
 intPair :: Parser [Integer]
 intPair = (\x _ z -> x:z:[]) <$> posInt <*> char ' ' <*>  posInt
+
+
+instance Alternative Parser where
+  empty       = Parser (\s -> Nothing)
+  (<|>) p1 p2 = Parser altFunc where
+    altFunc s = (runParser p1 s) <|> (runParser p2 s)
+
+
+intOrUppercase :: Parser ()
+intOrUppercase = (\a -> ()) <$> posInt <|> (\a -> ()) <$> satisfy isUpper

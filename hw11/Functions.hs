@@ -1,3 +1,4 @@
+import Control.Applicative
 pair :: Applicative f => f a -> f b -> f (a,b)
 pair = liftA2 (,)
 {- f = Maybe: the result is Nothing if either of the arguments is; if both are Just the result is Just their pairing. -}
@@ -12,13 +13,13 @@ pair = liftA2 (,)
 (*>) _ fb = fb
 
 
+sequenceA  :: Applicative f => [f a] -> f [a]
+sequenceA xs = foldr (\fx fxs -> (:) <$> fx <*> fxs) (pure []) xs
+
+                          {- (a -> [b]) -> ([a] -> [[b]]) -}
 
 mapA :: Applicative f => (a -> f b) -> ([a] -> f [b])
+{- mapA fs = map  -}
 
--- Maybe
-
-
-mapA       :: Applicative f => (a -> f b) -> ([a] -> f [b])
-sequenceA  :: Applicative f => [f a] -> f [a]
-replicateA :: Applicative f => Int -> f a -> f [a]
+{- replicateA :: Applicative f => Int -> f a -> f [a] -}
 

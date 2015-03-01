@@ -13,13 +13,15 @@ import Control.Applicative
 {- abParser = (\a b -> (a,b)) <$> char 'a' <*> char 'b' -}
 
 zeroOrMore :: Parser a -> Parser [a]
-zeroOrMore p = (\x y -> x ++ y) <$> arrayParser <*> (zeroOrMore p) <|> pure []
+zeroOrMore p = combineArrays <$> arrayParser <*> zeroOrMore p <|> pure []
   where
+    combineArrays x y =  x ++ y
     arrayParser = (\x -> x:[]) <$> p
 
 oneOrMore :: Parser a -> Parser [a]
-oneOrMore p = (\x y -> x ++ y) <$> arrayParser <*> (oneOrMore p) <|> arrayParser
+oneOrMore p = combineArrays <$> arrayParser <*> oneOrMore p <|> arrayParser
   where
+    combineArrays x y =  x ++ y
     arrayParser = (\x -> x:[]) <$> p
 
 ------------------------------------------------------------
@@ -51,3 +53,37 @@ data Atom = N Integer | I Ident
 data SExpr = A Atom
            | Comb [SExpr]
   deriving Show
+
+
+-- Remove whitespace
+-- Go through each word
+  -- atom
+    -- Determine int or ident
+    -- Create SExpr from Atom
+  -- sexpr
+    -- Create sexpr from by repeating above
+
+-- combine all sexpresssion created in each step
+--
+
+parseIdent :: Parser SExpr 
+parseIdent  = (\x -> A $ I x) <$> (spaces *> ident)
+
+parseIntAtoms :: Parser SExpr 
+parseIntAtoms = (\x -> A $ N x) <$> (spaces *> posInt)
+
+parseAtoms :: Parser SExpr
+parseAtoms  = createSExprFromAtoms <$> (zeroOrMore $ parseIdent <|> parseIntAtoms)
+  where
+    createSExprFromAtoms x 
+      | length x == 1  = head x
+      | otherwise      = Comb x
+
+
+
+
+sexprContents :: Parser String
+sexprContents = char '(' *> char ')' *> (zeroOrMore $ satisfy (\_ -> True))
+
+{- parserSExpr :: Parser SExpr -}
+{- parserSExpr =  -}

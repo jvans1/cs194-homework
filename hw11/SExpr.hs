@@ -67,23 +67,29 @@ data SExpr = A Atom
 --
 
 parseIdent :: Parser SExpr 
-parseIdent  = (\x -> A $ I x) <$> (spaces *> ident)
+parseIdent  = (\x -> A $ I x) <$> ident
 
 parseIntAtoms :: Parser SExpr 
-parseIntAtoms = (\x -> A $ N x) <$> (spaces *> posInt)
+parseIntAtoms = (\x -> A $ N x) <$> posInt
+
+parseSpacesFromAtoms :: Parser SExpr
+parseSpacesFromAtoms = spaces *> (parseIdent <|> parseIntAtoms)
+
+{- parseNestedSExpr :: Parser SExpr -}
+{- parseNestedSExpr = satisfy  -}
 
 parseAtoms :: Parser SExpr
-parseAtoms  = createSExprFromAtoms <$> (zeroOrMore $ parseIdent <|> parseIntAtoms)
-  where
-    createSExprFromAtoms x 
-      | length x == 1  = head x
-      | otherwise      = Comb x
+parseAtoms = flattenSExpr <$> zeroOrMore parseSpacesFromAtoms
+ where
+   flattenSExpr x 
+    | (length x) == 1 = head x
+    | otherwise       = Comb x
 
+parseSExpr :: Parser SExpr
+parseSExpr = parseAtoms <|> (\x -> Comb x) <$> (sexprContent *> parseSExpr)
 
+sexprContent :: Parser String
+sexprContent =  char '(' *> (zeroOrMore $ satisfy (/= ')'))
 
-
-sexprContents :: Parser String
-sexprContents = char '(' *> char ')' *> (zeroOrMore $ satisfy (\_ -> True))
-
-{- parserSExpr :: Parser SExpr -}
-{- parserSExpr =  -}
+{- parseSExpr :: Parser SExpr -}
+{- parseSExpr  = parseIdent <|> parseIntAtoms <|> sexprContents -}

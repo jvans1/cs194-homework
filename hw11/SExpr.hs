@@ -13,17 +13,22 @@ import Control.Applicative
 {- abParser = (\a b -> (a,b)) <$> char 'a' <*> char 'b' -}
 
 zeroOrMore :: Parser a -> Parser [a]
-zeroOrMore p = combineArrays <$> arrayParser <*> zeroOrMore p <|> pure []
+zeroOrMore p = addResults <$> arrayParser <*> zeroOrMore p <|> pure []
   where
-    combineArrays x y =  x ++ y
+    addResults x y =  x ++ y
     arrayParser = (\x -> x:[]) <$> p
 
 oneOrMore :: Parser a -> Parser [a]
-oneOrMore p = combineArrays <$> arrayParser <*> oneOrMore p <|> arrayParser
+oneOrMore p = addResults <$> arrayParser <*> oneOrMore p <|> arrayParser
   where
-    combineArrays x y =  x ++ y
+    addResults x y =  x ++ y
     arrayParser = (\x -> x:[]) <$> p
 
+nestSExpr :: Parser a -> Parser [a]
+nestSExpr  p = addResults <$> arrayParser <*> oneOrMore p <|> arrayParser
+  where
+    addResults x y =  y:x:[]
+    arrayParser = (\x -> x:[]) <$> p
 ------------------------------------------------------------
 --  2. Utilities
 ------------------------------------------------------------
@@ -72,24 +77,17 @@ parseIdent  = (\x -> A $ I x) <$> ident
 parseIntAtoms :: Parser SExpr 
 parseIntAtoms = (\x -> A $ N x) <$> posInt
 
-parseSpacesFromAtoms :: Parser SExpr
-parseSpacesFromAtoms = spaces *> (parseIdent <|> parseIntAtoms)
-
-{- parseNestedSExpr :: Parser SExpr -}
-{- parseNestedSExpr = satisfy  -}
-
-parseAtoms :: Parser SExpr
-parseAtoms = flattenSExpr <$> zeroOrMore parseSpacesFromAtoms
- where
-   flattenSExpr x 
-    | (length x) == 1 = head x
-    | otherwise       = Comb x
-
-parseSExpr :: Parser SExpr
-parseSExpr = parseAtoms <|> (\x -> Comb x) <$> (sexprContent *> parseSExpr)
-
-sexprContent :: Parser String
-sexprContent =  char '(' *> (zeroOrMore $ satisfy (/= ')'))
+parseAtoms  :: Parser SExpr
+parseAtoms  = spaces *>  (((\x -> Comb x) <$> (oneOrMore (sexprContent *> parseAtoms))) <|> parseIdent <|> parseIntAtoms  )
+-- (ass (butt (boob)))
+-- ass (butt (boob)
+-- [ Comb [A (I "ass")],
+--   Comb [A (I "butt")],
+--   Comb [A (I "boob")]
+-- ]
 
 {- parseSExpr :: Parser SExpr -}
-{- parseSExpr  = parseIdent <|> parseIntAtoms <|> sexprContents -}
+{- parseSExpr = parseAtoms <|> (\x -> Comb x) <$> (sexprContent *> parseSExpr) -}
+
+sexprContent :: Parser String
+sexprContent =  char '(' *> (zeroOrMore $ satisfy (== ')'))
